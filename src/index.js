@@ -8,6 +8,15 @@ const nameSchema = joi.object({
   name: joi.string().required(),
 });
 
+const messageSchema = joi.object({
+  to: joi.string().required(),
+  text: joi.string().required(),
+  type: joi
+    .string()
+    .required()
+    .pattern(/^private_message$|^message$/),
+});
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -29,7 +38,7 @@ try {
 app.post("/participants", async (req, res) => {
   const body = req.body;
 
-  const validation = nameSchema.validate(body);
+  const validation = nameSchema.validate(body, { abortEarly: false });
 
   if (validation.error) {
     const errors = validation.error.details.map(({ message }) => message);
@@ -70,6 +79,39 @@ app.get("/participants", async (req, res) => {
   const participantsArray = await participants.find().toArray();
 
   res.send(participantsArray);
+});
+
+app.post("/messages", async (req, res) => {
+  const body = req.body;
+  const remetent = req.headers.user;
+
+  const validation = messageSchema.validate(body, { abortEarly: false });
+  if (validation.error) {
+    const errors = validation.error.details.map(({ message }) => message);
+    res.status(422).send(errors);
+    return;
+  }
+  try {
+    const hasNameInList = await participants.findOne({ name: remetent });
+    if (!hasNameInList) {
+      res.sendStatus(422);
+      return;
+    }
+    const { $H, $m, $s } = dayjs(Date.now());
+    const time = `${$H}:${$m}:${$s}`;
+    const { to, text, type } = body;
+    const message = {
+      from: remetent,
+      to,
+      text,
+      type,
+      time,
+    };
+    await messages.insertOne(message);
+    res.send(201);
+  } catch (error) {
+    res.sendStatus(422);
+  }
 });
 
 app.listen(5000, () => {
