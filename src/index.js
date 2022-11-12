@@ -47,6 +47,7 @@ app.post("/participants", async (req, res) => {
   }
 
   try {
+    console.log(body.name);
     const user = await participants.findOne({ name: body.name });
     if (user) {
       res.sendStatus(409);
@@ -112,6 +113,27 @@ app.post("/messages", async (req, res) => {
   } catch (error) {
     res.sendStatus(422);
   }
+});
+
+app.get("/messages", async (req, res) => {
+  const user = req.headers.user;
+  const { limit } = req.query;
+  const messagesArray = await messages.find().toArray();
+
+  if (!limit || limit <= 0) {
+    res.send(messagesArray);
+    return;
+  }
+
+  const messagesFilter = messagesArray
+    .filter(({ from, to, type }) => {
+      const isValidMessage = from === user || to === user || type === "message";
+      return isValidMessage;
+    })
+    .reverse()
+    .slice(0, limit);
+
+  res.send(messagesFilter);
 });
 
 app.listen(5000, () => {
