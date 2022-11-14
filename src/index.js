@@ -47,7 +47,6 @@ app.post("/participants", async (req, res) => {
   }
 
   try {
-    console.log(body.name);
     const user = await participants.findOne({ name: body.name });
     if (user) {
       res.sendStatus(409);
@@ -134,6 +133,23 @@ app.get("/messages", async (req, res) => {
     .slice(0, limit);
 
   res.send(messagesFilter);
+});
+
+app.post("/status", async (req, res) => {
+  const name = req.headers.user;
+
+  try {
+    const user = await participants.findOne({ name });
+    if (!user) {
+      return res.sendStatus(404);
+    }
+
+    const lastStatus = Date.now();
+    await participants.updateOne({ name }, { $set: { lastStatus } });
+    res.sendStatus(200);
+  } catch (error) {
+    res.sendStatus(404);
+  }
 });
 
 app.listen(5000, () => {
