@@ -3,6 +3,7 @@ import cors from "cors";
 import { MongoClient } from "mongodb";
 import joi from "joi";
 import dayjs from "dayjs";
+import dotenv from "dotenv";
 
 const nameSchema = joi.object({
   name: joi.string().required(),
@@ -18,10 +19,11 @@ const messageSchema = joi.object({
 });
 
 const app = express();
+dotenv.config();
 app.use(express.json());
 app.use(cors());
 
-const mongoClient = new MongoClient("mongodb://localhost:27017");
+const mongoClient = new MongoClient(process.env.MONGO_URI);
 let db;
 let participants;
 let messages;
